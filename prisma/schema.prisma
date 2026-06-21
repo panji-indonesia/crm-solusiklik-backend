@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALES
+  FINANCE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum SalesStatus {
+  DRAFT
+  SENT
+}
+
+enum FinanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(SALES)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads         Lead[]
+  statusHistory StatusHistory[]
+}
+
+model Lead {
+  id             String     @id @default(uuid())
+  companyName    String
+  contactName    String
+  phone          String
+  email          String
+  source         String
+  estimatedValue Decimal
+  status         LeadStatus @default(NEW)
+  notes          String?
+  salesId        String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  sales User @relation(fields: [salesId], references: [id])
+  spk   Spk?
+}
+
+model Spk {
+  id            String        @id @default(uuid())
+  spkNumber     String        @unique
+  leadId        String        @unique
+  projectName   String
+  contractValue Decimal
+  startDate     DateTime
+  endDate       DateTime
+  salesStatus   SalesStatus   @default(DRAFT)
+  financeStatus FinanceStatus @default(PENDING)
+  financeNotes  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id])
+}
+
+model StatusHistory {
+  id          String   @id @default(uuid())
+  entityType  String
+  entityId    String
+  oldStatus   String?
+  newStatus   String
+  notes       String?
+  changedAt   DateTime @default(now())
+  changedById String
+
+  changedBy User @relation(fields: [changedById], references: [id])
+}
